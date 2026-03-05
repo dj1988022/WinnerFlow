@@ -1,33 +1,24 @@
 {
   "name": "winner-flow",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npm install --legacy-peer-deps && vite build",
-    "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "lucide-react": "^0.446.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^6.26.0",
-    "framer-motion": "^11.5.4",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.2",
-    "zustand": "^4.5.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "vite": "^5.4.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.45",
-    "tailwindcss": "^3.4.10",
     "typescript": "^5.5.3",
     "vite": "^5.4.2"
   }
