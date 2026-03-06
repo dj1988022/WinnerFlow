@@ -31,13 +31,9 @@ const categoryData = [
 ];
 
 const StatCard = ({ title, value, change, trend, icon: Icon }: any) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-5 hover:border-zinc-700/60 transition-colors group"
-  >
+  <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-5 group">
     <div className="flex justify-between items-start mb-4">
-      <div className="p-2 bg-zinc-800/50 rounded-lg text-zinc-400 group-hover:text-emerald-400 group-hover:bg-emerald-500/10 transition-colors">
+      <div className="p-2 bg-zinc-800/50 rounded-lg text-zinc-400">
         <Icon className="w-5 h-5" />
       </div>
       <div className={`flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full ${
@@ -49,7 +45,7 @@ const StatCard = ({ title, value, change, trend, icon: Icon }: any) => (
     </div>
     <h3 className="text-zinc-500 text-sm font-medium mb-1">{title}</h3>
     <div className="text-2xl font-bold text-zinc-100 tracking-tight">{value}</div>
-  </motion.div>
+  </div>
 );
 
 export default function Dashboard() {
@@ -91,11 +87,11 @@ export default function Dashboard() {
         setSearchQuery('');
         getStats();
       } else {
-        console.error("DB Error:", error);
+        // 如果这里报错 "Forbidden use of secret API key"，请务必更换你的 VITE_SUPABASE_ANON_KEY
         alert(`Database Issue: ${error.message}`);
       }
     } catch (err) {
-      console.error("Runtime Error:", err);
+      console.error("Runtime error:", err);
     } finally {
       setIsAnalyzing(false);
     }
@@ -144,17 +140,11 @@ export default function Dashboard() {
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                 <XAxis dataKey="name" stroke="#52525b" tick={{fill: '#71717a', fontSize: 12}} />
-                <YAxis stroke="#52525b" tick={{fill: '#71717a', fontSize: 12}} tickFormatter={(value) => `${value / 1000}k`} />
+                <YAxis stroke="#52525b" tick={{fill: '#71717a', fontSize: 12}} />
                 <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a' }} />
-                <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={1} fill="url(#colorValue)" />
+                <Area type="monotone" dataKey="value" stroke="#10b981" fill="#10b981" fillOpacity={0.1} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
