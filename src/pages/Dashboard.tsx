@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell 
 } from 'recharts';
 
-// 1. 初始化 Supabase
+// 初始化 Supabase
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -65,9 +65,13 @@ export default function Dashboard() {
   useEffect(() => { getStats(); }, []);
 
   const handleRunAnalysis = async () => {
-    if (!searchQuery) return alert("Please enter a keyword!");
+    if (!searchQuery || searchQuery.trim() === '') {
+      alert("Please enter a keyword first!");
+      return;
+    }
     setIsAnalyzing(true);
-    const { error } = await supabase.from('user_monitor_tasks').upsert({ keyword: searchQuery });
+    const { error } = await supabase.from('user_monitor_tasks').upsert({ keyword: searchQuery.trim() });
+    
     setTimeout(() => {
       setIsAnalyzing(false);
       if (!error) {
@@ -75,7 +79,7 @@ export default function Dashboard() {
         setSearchQuery('');
         getStats();
       } else {
-        alert("Check your Supabase RLS settings!");
+        alert("Database connection failed. Please check RLS settings.");
       }
     }, 1500);
   };
@@ -117,7 +121,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-6">
-          <h3 className="text-zinc-100 mb-6">Traffic Prediction</h3>
+          <h3 className="text-zinc-100 mb-6 text-lg font-semibold">Traffic Prediction</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
@@ -138,7 +142,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-xl p-6">
-          <h3 className="text-zinc-100 mb-6">Niche Performance</h3>
+          <h3 className="text-zinc-100 mb-6 text-lg font-semibold">Niche Performance</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} layout="vertical">
