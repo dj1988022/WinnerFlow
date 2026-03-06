@@ -8,7 +8,6 @@ import {
   Video, 
   Settings, 
   Zap,
-  Search,
   Bell,
   Menu,
   X,
@@ -109,14 +108,7 @@ export default function AppLayout({ children, activePage, onNavigate }: AppLayou
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center px-3 py-1.5 bg-zinc-900/50 border border-zinc-800 rounded-full w-64 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
-            <Search className="w-4 h-4 text-zinc-500 mr-2" />
-            <input 
-              type="text" 
-              placeholder="Search signals, products..." 
-              className="bg-transparent border-none outline-none text-sm text-zinc-200 w-full placeholder:text-zinc-600"
-            />
-          </div>
+          {/* 已移除冗余的 Search 输入框 */}
           <button className="relative p-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors">
             <Bell className="w-5 h-5" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-[#09090b]"></span>
@@ -144,72 +136,74 @@ export default function AppLayout({ children, activePage, onNavigate }: AppLayou
         </div>
       </header>
 
-      {/* Sidebar */}
-      <aside 
-        className={cn(
-          "fixed top-[calc(3.5rem+37px)] left-0 bottom-0 bg-[#09090b] border-r border-zinc-800/60 z-30 transition-all duration-300 ease-in-out",
-          collapsed ? "w-16" : "w-64"
-        )}
-      >
-        <div className="p-3 space-y-1">
-          {navItems.map((item) => (
-            <SidebarItem
-              key={item.id}
-              icon={item.icon}
-              label={item.label}
-              active={activePage === item.id}
-              collapsed={collapsed}
-              onClick={() => onNavigate(item.id)}
-            />
-          ))}
-        </div>
-
-        {/* System Status - Bottom of Sidebar */}
-        <div className={cn(
-          "absolute bottom-0 left-0 right-0 p-4 border-t border-zinc-800/60 bg-zinc-900/30",
-          collapsed ? "items-center flex flex-col gap-2" : ""
-        )}>
-          {!collapsed ? (
-            <>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{t('system_status')}</span>
-                <span className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  <span className="text-[10px] text-emerald-500 font-medium">{t('online')}</span>
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-zinc-400">
-                  <span>{t('api_usage')}</span>
-                  <span>78%</span>
-                </div>
-                <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500/70 w-[78%] rounded-full"></div>
-                </div>
-              </div>
-            </>
-          ) : (
-             <span className="relative flex h-2 w-2">
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-             </span>
+      <div className="flex">
+        {/* Sidebar */}
+        <aside 
+          className={cn(
+            "fixed top-14 left-0 bottom-0 bg-[#09090b] border-r border-zinc-800/60 z-30 transition-all duration-300 ease-in-out",
+            collapsed ? "w-16" : "w-64"
           )}
-        </div>
-      </aside>
+        >
+          <div className="p-3 space-y-1">
+            {navItems.map((item) => (
+              <SidebarItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                active={activePage === item.id}
+                collapsed={collapsed}
+                onClick={() => onNavigate(item.id)}
+              />
+            ))}
+          </div>
 
-      {/* Main Content Area */}
-      <main 
-        className={cn(
-          "transition-all duration-300 min-h-[calc(100vh-3.5rem-37px)]",
-          collapsed ? "pl-16" : "pl-64"
-        )}
-      >
-        <div className="p-6 max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
+          {/* System Status - Bottom of Sidebar */}
+          <div className={cn(
+            "absolute bottom-0 left-0 right-0 p-4 border-t border-zinc-800/60 bg-zinc-900/30",
+            collapsed ? "items-center flex flex-col gap-2" : ""
+          )}>
+            {!collapsed ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{t('system_status')}</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-[10px] text-emerald-500 font-medium">{t('online')}</span>
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-zinc-400">
+                    <span>{t('api_usage')}</span>
+                    <span>78%</span>
+                  </div>
+                  <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500/70 w-[78%] rounded-full"></div>
+                  </div>
+                </div>
+              </>
+            ) : (
+               <span className="relative flex h-2 w-2">
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+               </span>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main 
+          className={cn(
+            "flex-1 min-h-[calc(100-3.5rem)] transition-all duration-300",
+            collapsed ? "ml-16" : "ml-64"
+          )}
+        >
+          <div className="p-6">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
