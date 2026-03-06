@@ -70,39 +70,32 @@ export default function Dashboard() {
 
   const handleRunAnalysis = async () => {
     const currentQuery = searchQuery.trim();
-
-    // 1. 立即验证输入
     if (!currentQuery) {
       alert("Please enter a keyword first!");
       return;
     }
 
     setIsAnalyzing(true);
-
     try {
-      // 2. 向数据库提交任务
       const { error } = await supabase
         .from('user_monitor_tasks')
         .upsert({ 
           keyword: currentQuery,
-          status: 'pending',
           created_at: new Date().toISOString()
         });
 
-      // 模拟前端分析动画延迟
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       if (!error) {
         alert(`📡 Mission Dispatched: Tracking [${currentQuery}] now.`);
-        setSearchQuery(''); // 成功后清空输入框
-        getStats(); // 刷新统计数据
+        setSearchQuery('');
+        getStats();
       } else {
-        console.error("Supabase Error Details:", error);
-        alert(`Database Error: ${error.message || 'Check RLS policies'}`);
+        console.error("DB Error:", error);
+        alert(`Database Issue: ${error.message}`);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Runtime Error:", err);
-      alert("Connection failed. Check your network or Supabase URL.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -128,7 +121,9 @@ export default function Dashboard() {
           <button 
             onClick={handleRunAnalysis}
             disabled={isAnalyzing}
-            className={`${isAnalyzing ? 'bg-zinc-800 cursor-not-allowed text-zinc-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white'} px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg flex items-center gap-2 min-w-[140px] justify-center`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg min-w-[140px] justify-center ${
+              isAnalyzing ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+            }`}
           >
             {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
             {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
