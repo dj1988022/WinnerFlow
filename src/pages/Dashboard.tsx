@@ -15,13 +15,7 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-// --- 预留的测试数据 (Mock Data) ---
-const predictiveWinners = [
-  { id: 1, name: '智能自清洁猫砂盆', growth: '+420%', platform: 'TikTok', tag: '近期暴涨', status: 'High Potential' },
-  { id: 2, name: '便携式氛围投影灯', growth: '+315%', platform: 'Amazon', tag: '潜力黑马', status: 'Rising' },
-  { id: 3, name: '人体工学支撑背带', growth: '+280%', platform: 'TikTok', tag: '高转化率', status: 'Trending' },
-];
-
+// --- 基础图表数据保持不变 ---
 const trendData = [
   { name: 'Mon', value: 4000 }, { name: 'Tue', value: 3000 },
   { name: 'Wed', value: 5000 }, { name: 'Thu', value: 2780 },
@@ -58,9 +52,47 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [winnerCount, setWinnerCount] = useState('12');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // --- 1. 改为使用 State 存储真数据 ---
+  const [predictiveWinners, setPredictiveWinners] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  // 模拟权限状态 (后期对接后端的 plan 字段)
-  const isPro = false; 
+  // --- 2. 增加获取数据库真数据的函数 ---
+  const fetchRealWinners = async () => {
+    try {
+      // 从你准备建的 trending_products 表读取数据
+      const { data, error } = await supabase
+        .from('trending_products')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (data && data.length > 0) {
+        setPredictiveWinners(data);
+      } else {
+        // 如果数据库没数据，显示备用数据防止页面空洞
+        setPredictiveWinners([
+          { id: 1, name: '便携式榨汁杯', growth: '+230%', platform: 'TikTok', tag: '爆款指数: 8.5', status: 'High Potential' },
+          { id: 2, name: '磁吸手机支架', growth: '+210%', platform: 'Amazon', tag: '爆款指数: 8.2', status: 'Rising' },
+          { id: 3, name: '宠物吸毛器', growth: '+190%', platform: 'TikTok', tag: '爆款指数: 7.9', status: 'Trending' },
+        ]);
+      }
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRealWinners();
+    // 获取统计数字
+    const getStats = async () => {
+      const { count } = await supabase.from('tiktok_trends').select('*', { count: 'exact', head: true });
+      if (count !== null) setWinnerCount(count.toString());
+    };
+    getStats();
+  }, []);
 
   const handleRunAnalysis = async () => {
     if (!searchQuery.trim()) {
@@ -70,15 +102,14 @@ export default function Dashboard() {
     setIsAnalyzing(true);
     setTimeout(() => {
       setIsAnalyzing(false);
-      // 模拟 PRO 弹窗
-      alert(`📡 搜索成功！\n\n当前检测到 [${searchQuery}] 相关产品 152 个。\n\n提示：开启“24h 关键词自动监控”功能需要 PRO 权限。`);
+      alert(`📡 搜索成功！\n\n当前检测到 [${searchQuery}] 相关产品数据。\n\n提示：PRO 会员可开启 24h 自动追踪。`);
     }, 1500);
   };
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-10 text-white p-4 pb-20">
       
-      {/* A. 顶部的 4 个统计卡片 */}
+      {/* A. 统计卡片 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Potential Winners" value={winnerCount} change="+100%" trend="up" icon={TrendingUp} />
         <StatCard title="Intent Leads" value="1,284" change="+12%" trend="up" icon={Users} />
@@ -86,7 +117,7 @@ export default function Dashboard() {
         <StatCard title="Est. Revenue" value="$8,420" change="-2.4%" trend="down" icon={DollarSign} />
       </div>
 
-      {/* B. 引流核心：72小时飙升榜 (预测爆款) */}
+      {/* B. 飙升榜 - 现在数据是动态的 */}
       <section className="space-y-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -98,51 +129,55 @@ export default function Dashboard() {
               <p className="text-zinc-500 text-xs">AI 实时扫描全网社交信号，定位爆发前夜的黑马</p>
             </div>
           </div>
-          <button className="text-[10px] font-bold text-emerald-500 hover:underline">查看完整榜单 →</button>
+          <button onClick={fetchRealWinners} className="text-[10px] font-bold text-emerald-500 hover:rotate-180 transition-transform">
+             刷新数据 ↻
+          </button>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {predictiveWinners.map((item) => (
-            <div key={item.id} className="group relative bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-emerald-500/30 transition-all cursor-pointer overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-[10px] font-bold bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full border border-zinc-700 group-hover:border-emerald-500/50 transition-colors">
-                  {item.tag}
-                </span>
-                <div className="flex items-center gap-1 text-emerald-400 font-bold font-mono text-sm">
-                  <Activity className="w-3 h-3" />
-                  {item.growth}
+          {dataLoading ? (
+            <div className="col-span-3 h-32 flex items-center justify-center text-zinc-500 italic">正在同步全球实时数据...</div>
+          ) : (
+            predictiveWinners.map((item) => (
+              <div key={item.id} className="group relative bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-emerald-500/30 transition-all cursor-pointer overflow-hidden shadow-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-[10px] font-bold bg-zinc-800 text-zinc-300 px-2.5 py-1 rounded-full border border-zinc-700">
+                    {item.tag}
+                  </span>
+                  <div className="flex items-center gap-1 text-emerald-400 font-bold font-mono text-sm">
+                    <Activity className="w-3 h-3" />
+                    {item.growth}
+                  </div>
+                </div>
+                <h3 className="text-white font-bold text-lg mb-1 group-hover:text-emerald-400 transition-colors">{item.name}</h3>
+                <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-medium">
+                  <span>来源: {item.platform}</span>
+                  <span className="w-1 h-1 bg-zinc-700 rounded-full" />
+                  <span className="text-zinc-400 uppercase">{item.status || 'TRENDING'}</span>
+                </div>
+                
+                <div className="absolute inset-0 bg-black/80 backdrop-blur-[6px] flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <Lock className="w-6 h-6 text-emerald-500 mb-2" />
+                  <p className="text-white font-bold text-sm">解锁深度分析数据</p>
+                  <p className="text-[10px] text-zinc-400 mt-1 mb-4 text-center px-6">包含：投放成本、利润计算、供应商链接</p>
+                  <button className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-5 py-2 rounded-full shadow-xl">
+                    立即注册 / 升级 PRO
+                  </button>
                 </div>
               </div>
-              <h3 className="text-white font-bold text-lg mb-1 group-hover:text-emerald-400 transition-colors">{item.name}</h3>
-              <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-medium">
-                <span>来源: {item.platform}</span>
-                <span className="w-1 h-1 bg-zinc-700 rounded-full" />
-                <span className="text-zinc-400 uppercase">{item.status}</span>
-              </div>
-              
-              {/* 核心引流：模糊遮罩层 */}
-              <div className="absolute inset-0 bg-black/80 backdrop-blur-[6px] flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <Lock className="w-6 h-6 text-emerald-500 mb-2" />
-                <p className="text-white font-bold text-sm">解锁深度分析数据</p>
-                <p className="text-[10px] text-zinc-400 mt-1 mb-4 text-center px-6">包含：投放成本、利润计算、供应商链接</p>
-                <button className="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-black px-5 py-2 rounded-full shadow-xl active:scale-95 transition-transform">
-                  立即注册 / 升级 PRO
-                </button>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 
-      {/* C. 任务控制中心 (Mission Control) */}
+      {/* C. Mission Control */}
       <div className="pt-8 border-t border-zinc-800/60">
         <div className="flex flex-col lg:flex-row justify-between gap-6 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-2xl font-bold text-white tracking-tight">Mission Control</h1>
               <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[9px] font-bold text-emerald-500">
-                <ShieldCheck className="w-3 h-3" />
-                LIVE
+                <ShieldCheck className="w-3 h-3" /> LIVE
               </div>
             </div>
             <p className="text-zinc-400 text-sm">输入关键词，启动全网爆款追踪任务。</p>
@@ -155,19 +190,18 @@ export default function Dashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="输入产品关键词 (如: Blender, Lamp)..."
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500"
               />
             </div>
             <button 
               onClick={handleRunAnalysis}
               disabled={isAnalyzing}
-              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg ${
-                isAnalyzing ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20'
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                isAnalyzing ? 'bg-zinc-800 text-zinc-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
               }`}
             >
               {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
               {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
-              {!isAnalyzing && <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded ml-1">PRO</span>}
             </button>
           </div>
         </div>
@@ -175,46 +209,23 @@ export default function Dashboard() {
         {/* D. 图表区域 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-6 h-[400px]">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-zinc-100 text-sm font-semibold flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-500" />
-                Traffic Prediction
-              </h3>
-              <div className="flex gap-2">
-                {['24h', '7d', '30d'].map(t => (
-                  <button key={t} className="text-[10px] px-2 py-1 rounded bg-zinc-800 text-zinc-500 hover:text-white transition-colors">{t}</button>
-                ))}
-              </div>
-            </div>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
                 <XAxis dataKey="name" stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} />
-                <YAxis stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} tickFormatter={(value) => `${value / 1000}k`} />
-                <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', borderRadius: '12px' }} />
-                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorTrend)" />
+                <YAxis stroke="#52525b" tick={{fill: '#71717a', fontSize: 10}} />
+                <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a' }} />
+                <Area type="monotone" dataKey="value" stroke="#10b981" fillOpacity={0.1} fill="#10b981" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
-
           <div className="bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-6 h-[400px]">
              <h3 className="text-zinc-100 mb-8 text-sm font-semibold">Niche Performance</h3>
              <ResponsiveContainer width="100%" height="100%">
               <BarChart data={categoryData} layout="vertical" margin={{ left: -20 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" stroke="#52525b" tick={{fill: '#a1a1aa', fontSize: 11}} width={80} />
-                <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ backgroundColor: '#18181b', borderRadius: '10px' }} />
-                <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={24}>
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
-                  ))}
-                </Bar>
+                <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]} barSize={24} />
               </BarChart>
             </ResponsiveContainer>
           </div>
