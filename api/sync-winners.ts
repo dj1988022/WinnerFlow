@@ -12,32 +12,29 @@ export default async function handler(req: any, res: any) {
   const supabase = createClient(url, anon);
 
   try {
-    // 2. 抓取 TikTok 趋势
-    const ttRes = await fetch('https://tiktok-scraper7.p.rapidapi.com', {
+    // 2. 抓取 TikTok 热门用户视频
+    const ttRes = await fetch('https://tiktok-scraper2.p.rapidapi.com/user/videos?username=tiktok&limit=10', {
       headers: {
         'X-RapidAPI-Key': rapidKey,
-        'X-RapidAPI-Host': 'tiktok-scraper7.p.rapidapi.com'
+        'X-RapidAPI-Host': 'tiktok-scraper2.p.rapidapi.com'
       }
     });
 
     if (!ttRes.ok) throw new Error(`TikTok API 错误: ${ttRes.status}`);
-
     const ttData = await ttRes.json();
 
     // 3. 提取数据并存入 tiktok_trends
-    const items = (ttData?.data || []).slice(0, 5).map((item: any) => ({
-      description: item.title || 'TikTok Item',
-      play_count: item.stats?.play_count || 0,
+    const items = (ttData?.data?.videos || ttData?.data || []).slice(0, 5).map((item: any) => ({
+      description: item.desc || item.title || 'TikTok Item',
+      play_count: item.stats?.play_count || item.play_count || 0,
       intent_score: 8.8,
       created_at: new Date().toISOString()
     }));
 
     const { error } = await supabase.from('tiktok_trends').upsert(items);
-
     if (error) throw error;
 
     return res.status(200).json({ success: true });
-
   } catch (err: any) {
     return res.status(500).json({ error: "执行出错: " + err.message });
   }
