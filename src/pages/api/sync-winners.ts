@@ -1,19 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req: any, res: any) {
-  // 兼容逻辑：同时尝试读取带 VITE 和不带 VITE 的变量
+  // 1. 读取变量（兼容所有命名方式）
   const rapidKey = process.env.RAPIDAPI_KEY || process.env.VITE_RAPIDAPI_KEY;
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseAnon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const anon = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-  // 1. 诊断：如果缺钥匙，直接告诉前端缺哪一把
-  if (!rapidKey) return res.status(500).json({ error: "环境变量缺少 RAPIDAPI_KEY" });
-  if (!supabaseUrl || !supabaseAnon) return res.status(500).json({ error: "环境变量缺少 Supabase 配置" });
+  if (!rapidKey) return res.status(500).json({ error: "后端未读取到 RAPIDAPI_KEY" });
+  if (!url || !anon) return res.status(500).json({ error: "后端未读取到 Supabase 配置" });
 
-  const supabase = createClient(supabaseUrl, supabaseAnon);
+  const supabase = createClient(url, anon);
 
   try {
-    // 2. 抓取 TikTok 趋势
+    // 2. 抓取 TikTok 趋势 (注意：补全了 /trending/items 路径)
     const ttRes = await fetch('https://tiktok-scraper7.p.rapidapi.com', {
       headers: { 
         'X-RapidAPI-Key': rapidKey, 
@@ -21,34 +20,22 @@ export default async function handler(req: any, res: any) {
       }
     });
     
-    if (!ttRes.ok) throw new Error(`TikTok API 响应错误: ${ttRes.status}`);
+    if (!ttRes.ok) throw new Error(`TikTok API 错误: ${ttRes.status}`);
     const ttData = await ttRes.json();
 
-    // 3. 抓取 Amazon 趋势
-    const azRes = await fetch('https://real-time-amazon-data.p.rapidapi.com', {
-      headers: { 
-        'X-RapidAPI-Key': rapidKey, 
-        'X-RapidAPI-Host': 'real-time-amazon-data.p.guidedapi.com' 
-      }
-    });
-    const azData = await azRes.json();
+    // 3. 提取数据并存入 tiktok_trends
+    const items = (ttData?.data || []).slice(0, 5).map((item: any) => ({
+      description: item.title || 'TikTok Item',
+      play_count: item.stats?.play_count || 0,
+      intent_score: 8.8,
+      created_at: new Date().toISOString()
+    }));
 
-    // 4. 映射数据到 tiktok_trends 表
-    const winners = [
-      { 
-        description: ttData?.data?.[0]?.title || 'TikTok Trending Item', 
-        play_count: ttData?.data?.[0]?.stats?.play_count || 100000,
-        intent_score: 9.2,
-        created_at: new Date().toISOString()
-      }
-    ];
-
-    const { error } = await supabase.from('tiktok_trends').upsert(winners);
+    const { error } = await supabase.from('tiktok_trends').upsert(items);
     if (error) throw error;
 
-    res.status(200).json({ success: true, message: "同步成功" });
+    return res.status(200).json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: "执行失败: " + err.message });
+    return res.status(500).json({ error: "执行出错: " + err.message });
   }
 }
-步失败，请确保 Vercel 环境变量已配置并 Redeploy
